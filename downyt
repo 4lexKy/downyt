@@ -1,0 +1,166 @@
+#!/bin/bash
+
+# Copyright 2026 Tu Nombre y colaboradores
+# SPDX-License-Identifier: GPL-2.0-only
+# Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo los términos
+# de la Licencia Pública General GNU como publicada por la Free Software Foundation,
+# ya sea la versión 2 de la Licencia, o (a tu elección) cualquier versión posterior.
+
+# 20.09.2026
+# Intento funcional de usar jdownloader (yt-dlp)  para descargar con terminal
+
+#Por hacer
+# - Gestión de listas
+# - Gestión de canales
+# - Aceptar urls por argumento
+# - Aceptar ficheros con listas de urls como argumento
+# - Añadir ruta de trabajo
+# - Añadir modos (descarga todo, solo musica, solo 1080...)
+# - añadir un help
+# - Añadir gestión de descarga, actualización y resolvDependencias.
+# - Meter en funciones
+# - Modo silencioso
+
+#Versiones
+# 26.09.2026 v.1.00 - Inici, funciona amb 4 confs i url com arg1
+# 28.09.2026 v.1.01 - Adaptat a ejecusió en diferents rutes (per a diane)
+# 28.09.2026 v.1.02 - Mostra sols els noms de video i audio segons num args
+version="v.1.02"
+
+#Configuraciones manuales
+carpetaTrabajo="$0-descargas"
+nombreTemporales="zTemp" #estarà detro de carpetaTrabajo
+rutaConfig="$carpetaTrabajo/confd"
+
+#Dependencias
+# ffmpeg ffprobe python3 nodejs
+# sudo apt install -y ffmpeg python3 nodejs
+
+#Instalacion (desde git oficial)
+#Git: https://github.com/yt-dlp/yt-dlp/#release-files
+# curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ./yt-dlp
+# chmod 744 yt-dlp
+
+#Actualización
+# ./yt-dlp --version
+# ./yt-dlp --update-to stable@latest
+
+
+#Constructor
+
+#Creación de archivo de configuración y carpetas
+# video  ->  AV1 > VP9 > H.265 > H.264
+# audio  ->  OPUS > AAC > MP3
+mkdir -p $carpetaTrabajo $rutaConfig
+echo "
+--js-runtimes node
+--merge-output-format mkv
+--paths $carpetaTrabajo
+--paths temp:$nombreTemporales
+
+# --- COMPORTAMIENTO ---
+--continue
+--no-abort-on-error
+--ignore-errors
+" > "$rutaConfig/configTOP"
+echo "
+# --format 616+251
+--format \"bestvideo[height<=1080]+bestaudio\"
+
+--js-runtimes node
+--merge-output-format mkv
+--paths $carpetaTrabajo
+--paths temp:$nombreTemporales
+
+# --- COMPORTAMIENTO ---
+--continue
+--no-abort-on-error
+--ignore-errors
+" > "$rutaConfig/config1080-TOP"
+echo "
+--format \"bestvideo[vcodec^=av01][height<=1080]+bestaudio/bestvideo[vcodec^=vp9][height<=1080]+bestaudio/bestvideo[vcodec^=hev1][height<=1080]+bestaudio/bestvideo[vcodec^=avc1][height<=1080]+bestaudio\"
+
+--js-runtimes node
+--merge-output-format mkv
+--paths $carpetaTrabajo
+--paths temp:$nombreTemporales
+
+# --- COMPORTAMIENTO ---
+--continue
+--no-abort-on-error
+--ignore-errors
+" > "$rutaConfig/config1080-AV1"
+echo "
+--format \"bestaudio/best\"
+
+--js-runtimes node
+--merge-output-format mkv
+--paths $carpetaTrabajo
+--paths temp:$nombreTemporales
+
+# --- COMPORTAMIENTO ---
+--continue
+--no-abort-on-error
+--ignore-errors
+" > "$rutaConfig/configAUDIO"
+
+rutaConf="configAUDIO"
+rutaConfA="config1080-AV1"
+rutaConfB="config1080-TOP"
+rutaConfC="configTOP"
+
+#Switch segun número de argumentos
+case "$#" in
+    "0")
+        echo -e "\tUso:"
+        echo -e "> $0 -> Muestra esta información."
+        echo -e "> $0 urlVideo -> Descarga con todas las configuraciones."
+        echo -e "> $0 x urlVideo -> Mostra nom del video"
+        exit
+        ;;
+    "1")
+        URL=$1
+        ;;
+    "2")
+#         echo "Amb dos entenc que vols saber sols el nom de l'audio..."
+        URL=$2
+        ejecutar="$(dirname $0)/yt-dlp"
+        "$ejecutar" --config-location $rutaConfig/$rutaConf -o "%(uploader)s/%(title)s/%(title)s [${rutaConf}].%(ext)s" --simulate --print filename $URL 2>/dev/null
+        exit
+        ;;
+    "3")
+#         echo "Amb dos entenc que vols saber sols el nom del video top..."
+        URL=$3
+        ejecutar="$(dirname $0)/yt-dlp"
+        "$ejecutar" --config-location $rutaConfig/$rutaConfC -o "%(uploader)s/%(title)s/%(title)s [${rutaConfC}].%(ext)s" --simulate --print filename $URL 2>/dev/null
+        exit
+        ;;
+    * )
+        ;;
+esac
+
+
+    # MAIN - USO
+echo "Versión $version"
+#Generamos la ruta al ejecutable que descarga
+ejecutar="$(dirname $0)/yt-dlp"
+echo "Nombre de archivo a descargar:"
+"$ejecutar" --config-location $rutaConfig/$rutaConfC --simulate --print filename $URL
+echo "Info de calidades:"
+"$ejecutar" -F $URL
+
+echo "Descarga A:"
+"$ejecutar" --config-location "$rutaConfig/$rutaConf" -o "%(uploader)s/%(title)s/%(title)s [${rutaConf}].%(ext)s" "$URL" 2>/dev/null
+
+echo "Descarga B:"
+"$ejecutar" --config-location $rutaConfig/$rutaConfA -o "%(uploader)s/%(title)s/%(title)s [${rutaConfA}].%(ext)s" "$URL" 2>/dev/null # 1>&2
+
+echo "Descarga C:"
+"$ejecutar" --config-location $rutaConfig/$rutaConfB -o "%(uploader)s/%(title)s/%(title)s [${rutaConfB}].%(ext)s" "$URL" 2>/dev/null
+
+echo "Descarga D:"
+"$ejecutar" --config-location $rutaConfig/$rutaConfC -o "%(uploader)s/%(title)s/%(title)s [${rutaConfC}].%(ext)s" "$URL" 2>/dev/null # 1>&2
+
+#Eliminamos archivos temporales
+sleep 1
+rm -rf $rutaConfig "$carpetaTrabajo/$nombreTemporales"

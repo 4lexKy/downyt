@@ -1,0 +1,15 @@
+
+# Temporales ##########
+*.kate-swp
+#######################
+
+# Informaciónpersonal #
+.megaignore
+ytdw-descargas
+#######################
+
+# Binarios ############
+yt-dlp
+#######################
+
+
