@@ -10,31 +10,35 @@
 # Intento funcional de usar jdownloader (yt-dlp)  para descargar con terminal
 
 #Por hacer
-# - Gestión de listas
 # - Gestión de canales
-# - Aceptar urls por argumento
 # - Aceptar ficheros con listas de urls como argumento
-# - Añadir ruta de trabajo
-# - Añadir modos (descarga todo, solo musica, solo 1080...)
-# - añadir un help
-# - Añadir gestión de descarga, actualización y resolvDependencias.
-# - Meter en funciones
-# - Modo silencioso
+# - Añadir actualización y resolvDependencias.
 
 #Versiones
 # 26.09.2026 v.1.00 - Inici, funciona amb 4 confs i url com arg1
 # 28.09.2026 v.1.01 - Adaptat a ejecusió en diferents rutes (per a diane)
 # 28.09.2026 v.1.02 - Mostra sols els noms de video i audio segons num args
-version="v.1.02"
+# 29.10.2026 v.1.04 - Reestructuració completa de la entrada d'arguments
+# 29.10.2026 v.1.05 - Reestructuració de la execució
+# 29.10.2026 v.1.06 - Accepta arguments amb getopts
+# 29.10.2026 v.1.07 - Mostra correctament nom per a cada cas i generic
+# 29.10.2026 v.1.08 - Descarrega correctament totes les combinacions posibles
+# 29.10.2026 v.1.09 - Inclos un help per mostrar com funciona
+# 29.10.2026 v.1.10 - Descarrega en ruta introduida com argument
+# 29.10.2026 v.1.11 - Funcionen les playlists, opció per a desabilitar
+# 29.10.2026 v.1.12 - Solventa dependencias automaticamente
+# 29.10.2026 v.1.13 - Actualitza automaticament yt-dlp
+# 29.10.2026 v.2.00 - Programa plenament útil i funcional.
+version="v.2.00"
 
-#Configuraciones manuales
-carpetaTrabajo="$0-descargas"
-nombreTemporales="zTemp" #estarà detro de carpetaTrabajo
-rutaConfig="$carpetaTrabajo/confd"
-
-#Dependencias
+#Instala dependencias
 # ffmpeg ffprobe python3 nodejs
-# sudo apt install -y ffmpeg python3 nodejs
+# sudo apt install -y ffmpeg python3 nodejs curl
+(
+    command -v ffmpeg  || sudo apt install -y ffmpeg
+    command -v python3 || sudo apt install -y python3
+    (command -v nodejs  || command -v node ) || sudo apt install -y nodejs
+) >/dev/null 2>&1
 
 #Instalacion (desde git oficial)
 #Git: https://github.com/yt-dlp/yt-dlp/#release-files
@@ -43,60 +47,64 @@ rutaConfig="$carpetaTrabajo/confd"
 
 #Actualización
 # ./yt-dlp --version
-# ./yt-dlp --update-to stable@latest
+./yt-dlp --update-to stable@latest >/dev/null 2>&1
 
-
-#Constructor
+#Configuraciones manuales
+rutaDescargas="$0-descargas"
+rutaConfig="$rutaDescargas/confd"
+mkdir -p $rutaDescargas $rutaConfig
+rutaTemporales="zTemp" #estarà detro de rutaDescargas
 
 #Creación de archivo de configuración y carpetas
 # video  ->  AV1 > VP9 > H.265 > H.264
 # audio  ->  OPUS > AAC > MP3
-mkdir -p $carpetaTrabajo $rutaConfig
 echo "
 --js-runtimes node
 --merge-output-format mkv
---paths $carpetaTrabajo
---paths temp:$nombreTemporales
+--paths temp:$rutaTemporales
 
 # --- COMPORTAMIENTO ---
 --continue
 --no-abort-on-error
 --ignore-errors
 " > "$rutaConfig/configTOP"
+
+
 echo "
 # --format 616+251
 --format \"bestvideo[height<=1080]+bestaudio\"
 
 --js-runtimes node
 --merge-output-format mkv
---paths $carpetaTrabajo
---paths temp:$nombreTemporales
+--paths temp:$rutaTemporales
 
 # --- COMPORTAMIENTO ---
 --continue
 --no-abort-on-error
 --ignore-errors
 " > "$rutaConfig/config1080-TOP"
+
+
 echo "
 --format \"bestvideo[vcodec^=av01][height<=1080]+bestaudio/bestvideo[vcodec^=vp9][height<=1080]+bestaudio/bestvideo[vcodec^=hev1][height<=1080]+bestaudio/bestvideo[vcodec^=avc1][height<=1080]+bestaudio\"
 
 --js-runtimes node
 --merge-output-format mkv
---paths $carpetaTrabajo
---paths temp:$nombreTemporales
+--paths temp:$rutaTemporales
 
 # --- COMPORTAMIENTO ---
 --continue
 --no-abort-on-error
 --ignore-errors
 " > "$rutaConfig/config1080-AV1"
+
+
 echo "
 --format \"bestaudio/best\"
 
 --js-runtimes node
 --merge-output-format mkv
---paths $carpetaTrabajo
---paths temp:$nombreTemporales
+--paths temp:$rutaTemporales
 
 # --- COMPORTAMIENTO ---
 --continue
@@ -104,36 +112,93 @@ echo "
 --ignore-errors
 " > "$rutaConfig/configAUDIO"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#FUNCIONES
+help()
+{
+    echo -e "\t\tUso:"
+    echo -e "\t> $0 [args...] urlVideo"
+    echo
+    echo -e "\t\tModos (excluyentes):"
+    echo -e "\t-h -> Muestra instrucciones (sin url)"
+    echo -e "\t-i -> Muestra información del vídeo"
+    echo -e "\t-t -> Descarga audio y los 3 videos"
+    echo -e "\t-a -> Descarga audio"
+    echo -e "\t-v [opt] -> Descarga vídeo:"
+    echo -e "\t\t -v A -> Video 1080-AV1 (mejor teórico)"
+    echo -e "\t\t -v B -> Video 1080-TOP (mejor bitrate)"
+    echo -e "\t\t -v C -> Video   ??-TOP (mayor calidad)"
+    echo
+    echo -e "\t\tExtras:"
+    echo -e "\t-n -> Muestra el nombre, usa junto a -a o -v"
+    echo -e "\t-l -> Si el video esta en una lista la descarga"
+    echo -e "\t-p RUTA -> Ruda donde se descargará"
+    echo
+    echo -e "\t *Enlace de lista descarga la lista"
+    echo
+    exit
+}
+
+
+#Constructor
 rutaConf="configAUDIO"
 rutaConfA="config1080-AV1"
 rutaConfB="config1080-TOP"
 rutaConfC="configTOP"
 
-#Switch segun número de argumentos
+#Conseguimos opciones
+modo="-1"           #Indica que va a hacer
+videoConf="-1"      #Si es video, que tipo
+nombre=false        #Si muestra el nombre que està descargando
+listaReproduccion="--no-playlist"
+while getopts "hiav:tnlp:" opt; do
+    case "$opt" in
+        #Excluyentes (que hará: ayuda/info/descargaA/descargaV/todo)
+        h) modo="help"  ;;  #Mostramos informacion de uso
+        i) modo="info"  ;;  #Mostramos información del video
+        a) modo="audio" ;;
+        v) modo="video"; videoConf="$OPTARG" ;;
+        t) modo="todo"  ;;  #Descarga los 3 modos de video
+        #Comportamiento (devuelve nombre / descarga lista /cambia ruta)
+        n) nombre=true ;;  #Muestra solo el nombre del fichero
+        l) listaReproduccion="--yes-playlist" ;;    #Si es una lista descarga la lista
+        p) rutaDescargas="$OPTARG" ;;
+        \?) echo "Opción inválida: -$OPTARG" >&2; exit 1 ;;
+        :) echo "Opción -$OPTARG necesita valor" >&2; exit 1 ;;
+    esac
+done
+
+#Desplazamos un número de args igual al que hemos leido -1
+shift $((OPTIND - 1))
+
+#Switch segun número de argumentos que no son opciones
 case "$#" in
     "0")
-        echo -e "\tUso:"
-        echo -e "> $0 -> Muestra esta información."
-        echo -e "> $0 urlVideo -> Descarga con todas las configuraciones."
-        echo -e "> $0 x urlVideo -> Mostra nom del video"
-        exit
+        help
         ;;
     "1")
         URL=$1
-        ;;
-    "2")
-#         echo "Amb dos entenc que vols saber sols el nom de l'audio..."
-        URL=$2
-        ejecutar="$(dirname $0)/yt-dlp"
-        "$ejecutar" --config-location $rutaConfig/$rutaConf -o "%(uploader)s/%(title)s/%(title)s [${rutaConf}].%(ext)s" --simulate --print filename $URL 2>/dev/null
-        exit
-        ;;
-    "3")
-#         echo "Amb dos entenc que vols saber sols el nom del video top..."
-        URL=$3
-        ejecutar="$(dirname $0)/yt-dlp"
-        "$ejecutar" --config-location $rutaConfig/$rutaConfC -o "%(uploader)s/%(title)s/%(title)s [${rutaConfC}].%(ext)s" --simulate --print filename $URL 2>/dev/null
-        exit
         ;;
     * )
         ;;
@@ -141,26 +206,92 @@ esac
 
 
     # MAIN - USO
-echo "Versión $version"
+[ "$nombre" = false ] && echo "Versión $version"
 #Generamos la ruta al ejecutable que descarga
 ejecutar="$(dirname $0)/yt-dlp"
-echo "Nombre de archivo a descargar:"
-"$ejecutar" --config-location $rutaConfig/$rutaConfC --simulate --print filename $URL
-echo "Info de calidades:"
-"$ejecutar" -F $URL
 
-echo "Descarga A:"
-"$ejecutar" --config-location "$rutaConfig/$rutaConf" -o "%(uploader)s/%(title)s/%(title)s [${rutaConf}].%(ext)s" "$URL" 2>/dev/null
+#Opciones comunes a todas las descargas
+opcionesYtDlp="--paths $rutaDescargas $listaReproduccion $URL"
 
-echo "Descarga B:"
-"$ejecutar" --config-location $rutaConfig/$rutaConfA -o "%(uploader)s/%(title)s/%(title)s [${rutaConfA}].%(ext)s" "$URL" 2>/dev/null # 1>&2
+case "$modo" in
+    "help")
+        help
+    ;;
+    "info")
+        echo "Info de calidades:"
+        "$ejecutar" -F $URL
+    ;;
+    "audio")
+        rutaDeConfiguracion=$rutaConf;
+        #Se ejecuta la descarga salvo que se pida el nombre
+        if [ "$nombre" = false ]; then
+            echo "Decargando audio en modo '$rutaDeConfiguracion'"
+            "$ejecutar" --config-location "$rutaConfig/$rutaDeConfiguracion" -o "%(uploader)s/%(title)s/%(title)s [${rutaDeConfiguracion}].%(ext)s" ${opcionesYtDlp} 2>/dev/null
+        else
+            "$ejecutar" --config-location "$rutaConfig/$rutaDeConfiguracion" -o "%(uploader)s/%(title)s/%(title)s [${rutaDeConfiguracion}].%(ext)s" --simulate --print filename ${opcionesYtDlp} 2>/dev/null
+        fi
+    ;;
+    "video")
+        case "$videoConf" in
+            "a"|"A")
+                rutaDeConfiguracion=$rutaConfA;
+            ;;
+            "b"|"B")
+                rutaDeConfiguracion=$rutaConfB;
+            ;;
+            "c"|"C")
+                rutaDeConfiguracion=$rutaConfC;
+            ;;
+            *)
+                echo "Elige una opción de video, mira -h"
+                exit
+            ;;
+        esac
 
-echo "Descarga C:"
-"$ejecutar" --config-location $rutaConfig/$rutaConfB -o "%(uploader)s/%(title)s/%(title)s [${rutaConfB}].%(ext)s" "$URL" 2>/dev/null
+        #Se ejecuta la descarga salvo que se pida el nombre
+        if [ "$nombre" = false ]; then
+            echo "Decargando vídeo en modo '$rutaDeConfiguracion'"
+            "$ejecutar" --config-location "$rutaConfig/$rutaDeConfiguracion" -o "%(uploader)s/%(title)s/%(title)s [${rutaDeConfiguracion}].%(ext)s" ${opcionesYtDlp} 2>/dev/null # 1>&2
+        else
+            "$ejecutar" --config-location "$rutaConfig/$rutaDeConfiguracion" -o "%(uploader)s/%(title)s/%(title)s [${rutaDeConfiguracion}].%(ext)s" --simulate --print filename ${opcionesYtDlp} 2>/dev/null
+        fi
+    ;;
+    "todo")
+        if [ "$nombre" = false ]; then
+            echo -e "\nDescarga A:"
+            "$ejecutar" --config-location "$rutaConfig/$rutaConf" -o "%(uploader)s/%(title)s/%(title)s [${rutaConf}].%(ext)s" ${opcionesYtDlp} 2>/dev/null
 
-echo "Descarga D:"
-"$ejecutar" --config-location $rutaConfig/$rutaConfC -o "%(uploader)s/%(title)s/%(title)s [${rutaConfC}].%(ext)s" "$URL" 2>/dev/null # 1>&2
+            echo -e "\nDescarga B:"
+            "$ejecutar" --config-location $rutaConfig/$rutaConfA -o "%(uploader)s/%(title)s/%(title)s [${rutaConfA}].%(ext)s" ${opcionesYtDlp} 2>/dev/null # 1>&2
+
+            echo -e "\nDescarga C:"
+            "$ejecutar" --config-location $rutaConfig/$rutaConfB -o "%(uploader)s/%(title)s/%(title)s [${rutaConfB}].%(ext)s" ${opcionesYtDlp} 2>/dev/null
+
+            echo -e "\nDescarga D:"
+            "$ejecutar" --config-location $rutaConfig/$rutaConfC -o "%(uploader)s/%(title)s/%(title)s [${rutaConfC}].%(ext)s" ${opcionesYtDlp} 2>/dev/null # 1>&2
+
+            echo
+        else
+            "$ejecutar" --config-location "$rutaConfig/$rutaConf" -o "%(uploader)s/%(title)s/%(title)s [${rutaConf}].%(ext)s"  --simulate --print filename ${opcionesYtDlp} 2>/dev/null
+
+            "$ejecutar" --config-location $rutaConfig/$rutaConfA -o "%(uploader)s/%(title)s/%(title)s [${rutaConfA}].%(ext)s"  --simulate --print filename ${opcionesYtDlp} 2>/dev/null
+
+            "$ejecutar" --config-location $rutaConfig/$rutaConfB -o "%(uploader)s/%(title)s/%(title)s [${rutaConfB}].%(ext)s"  --simulate --print filename ${opcionesYtDlp} 2>/dev/null
+
+            "$ejecutar" --config-location $rutaConfig/$rutaConfC -o "%(uploader)s/%(title)s/%(title)s [${rutaConfC}].%(ext)s"  --simulate --print filename ${opcionesYtDlp} 2>/dev/null
+
+        fi
+    ;;
+    *)
+        if [ "$nombre" = true ]; then
+            "$ejecutar" --simulate --print filename $URL 2>/dev/null
+        else
+            echo "De momento no va sin modo"
+        fi
+    ;;
+esac
+
 
 #Eliminamos archivos temporales
 sleep 1
-rm -rf $rutaConfig "$carpetaTrabajo/$nombreTemporales"
+rm -rf $rutaConfig "$rutaDescargas/$rutaTemporales"

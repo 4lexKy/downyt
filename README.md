@@ -34,10 +34,27 @@ Probado en:
 
 ---
 ## Uso
-[próximamente]
-### Opciones de ejecución
-### Ejemplo de uso
-### Uso Avanzado
+No se requiere instalación. Para usar símplemente se ha de ejecutar el script principal. A continuación se pueden ver las diferentes opciones de ejecución y descarga
+
+### Opciones de ejecución: EXCLUYENTES (solo 1 opción a la vez)
+- **-h** -> Muestra la información de uso del programa por terminal
+- **-i URLyoutube** -> Muestra la información de descarga del vídeo (sin descarga)
+- **-a URLyoutube** -> Descarga solo el audio del vídeo
+- **-v X URLyoutube** -> Descarga el vídeo (con audio) según la opción 'X' indicada. Las opciones pueden ser:
+
+>>**a** o **A** -> Descarga el vídeo en 1080p con códec AV1
+
+>>**b** o **B** -> Descarga el vídeo en 1080p con el máximo bitrate
+
+>>**c** o **B** -> Descarga el vídeo en la máxima resolución existente
+- **-t URLyoutube** -> Descarga las 4 versiones a la vez (audio + 1080-AV1 + 1080-MaxBR + MaxRes)
+
+### Opciones de ejecución: Se pueden combinar entre sí y con las anteriores
+- **-n URLyoutube** -> La salida estándar del programa es el nombre que quedará tras las descarga. Útil para gestión de las descargas
+- **-l** -> Si es una lista de reproduccion la descarga. Solo tiene efecto junto a las opciones de descarga
+- **-p rutaDeDescarga** -> Solo tiene efecto junto a las opciones de descarga.
+
+*De forma predeterminada NO se descargan las listas de reproducción.
 
 ---
 ## Recomendación
