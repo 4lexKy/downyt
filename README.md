@@ -1,11 +1,11 @@
-[Versión 0.7.1]: #
+[Versión 0.7.2]: #
 # downyt - Descargador de vídeos de youtube, wrapper de yt-dlp
 
-Se trata de un wrapper de yt-dlp, se puede usar de forma independiente pero se desarrolló como herramienta para [Meritxell](https://github.com/4lexKy/meritxell). Se actualiza automáticamente y descarga 4 versiones (audio-Mejor, 1080p-AV1, 1080p-MaxBitRate, resolución máxima).
+Se trata de un wrapper de [yt-dlp](https://github.com/yt-dlp), se puede usar de forma independiente pero se desarrolló como herramienta para [Meritxell](https://github.com/4lexKy/meritxell). Se actualiza automáticamente y descarga 4 versiones (audio-Mejor, 1080p-AV1, 1080p-MaxBitRate, resolución máxima).
 
 ---
 ## Estado del proyecto
-Actualmente está en desarrollo.
+Actualmente funciona correctamente.
 
 ### Ficheros
 - downyt: fichero principal del proyecto
@@ -16,7 +16,7 @@ Actualmente está en desarrollo.
 ---
 ## Instalación
 No requiere instalación
-- yt-dlp (descarga automática, no requiere instalación manual)
+- [yt-dlp](https://github.com/yt-dlp) (descarga automática, no requiere instalación manual)
 
 ### Lenguaje
 - Bash
