@@ -29,7 +29,8 @@
 # 29.10.2026 v.1.12 - Solventa dependencias automaticamente
 # 29.10.2026 v.1.13 - Actualitza automaticament yt-dlp
 # 29.10.2026 v.2.00 - Programa plenament útil i funcional.
-version="v.2.00"
+# 29.10.2026 v.2.01 - En caso de no existir ./yt-dlp, soluciona automaticamente la dependencia
+version="v.2.01"
 
 #Instala dependencias
 # ffmpeg ffprobe python3 nodejs
@@ -42,8 +43,10 @@ version="v.2.00"
 
 #Instalacion (desde git oficial)
 #Git: https://github.com/yt-dlp/yt-dlp/#release-files
-# curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ./yt-dlp
-# chmod 744 yt-dlp
+if [[ ! -e "./yt-dlp" ]]; then
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ./yt-dlp
+    chmod 744 yt-dlp
+fi
 
 #Actualización
 # ./yt-dlp --version
