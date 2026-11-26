@@ -1,0 +1,12 @@
+
+--format "bestaudio/best"
+
+--js-runtimes node
+--merge-output-format mkv
+--paths temp:zTemp
+
+# --- COMPORTAMIENTO ---
+--continue
+--no-abort-on-error
+--ignore-errors
+
