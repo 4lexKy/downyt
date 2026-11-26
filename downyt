@@ -29,8 +29,9 @@
 # 29.10.2026 v.1.12 - Solventa dependencias automaticamente
 # 29.10.2026 v.1.13 - Actualitza automaticament yt-dlp
 # 29.10.2026 v.2.00 - Programa plenament útil i funcional.
-# 29.10.2026 v.2.01 - En caso de no existir ./yt-dlp, soluciona automaticamente la dependencia
-version="v.2.01"
+# 26.11.2026 v.2.01 - En caso de no existir ./yt-dlp, soluciona automaticamente la dependencia
+# 26.11.2026 v.2.02 - Script adaptado a ser lanzado desde diferentes rutas
+version="v.2.02"
 
 #Ubicamos en el directorio del script
 cd $(dirname $0)
@@ -56,7 +57,7 @@ fi
 ./yt-dlp --update-to stable@latest >/dev/null 2>&1
 
 #Configuraciones manuales
-rutaDescargas="$0-descargas"
+rutaDescargas="$(dirname $0)-descargas"
 rutaConfig="$rutaDescargas/confd"
 mkdir -p $rutaDescargas $rutaConfig
 rutaTemporales="zTemp" #estarà detro de rutaDescargas
@@ -214,7 +215,7 @@ esac
     # MAIN - USO
 [ "$nombre" = false ] && echo "Versión $version"
 #Generamos la ruta al ejecutable que descarga
-ejecutar="$(dirname $0)/yt-dlp"
+ejecutar="./yt-dlp"
 
 #Opciones comunes a todas las descargas
 opcionesYtDlp="--paths $rutaDescargas $listaReproduccion $URL"
